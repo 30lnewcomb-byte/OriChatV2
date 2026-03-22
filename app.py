@@ -1,141 +1,187 @@
 from flask import Flask, render_template, request, redirect, session
 from flask_socketio import SocketIO, send
+from flask_sqlalchemy import SQLAlchemy
 import random
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# IMPORTANT: no eventlet issues
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# ===== USERS =====
-users = {
-    "liam": {
-        "password": "L9v#2Qx!7Zp@rK",
-        "admin": True
-    },
-    "carter": {
-        "password": "T4m$8Wd^1Yb!Ns",
-        "admin": False
-    }
-}
+# ===== DATABASE =====
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
+db = SQLAlchemy(app)
 
-# ===== ORI SETTINGS =====
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True)
+    password = db.Column(db.String(100))
+    admin = db.Column(db.Boolean, default=False)
+
+# create DB (runs safely)
+with app.app_context():
+    db.create_all()
+
+# ===== GLOBAL STATES =====
 ori_enabled = True
+blooket_mode = False
+current_prank = None
+user_behavior = {}
 
-# ===== ORI BRAIN =====
-def ori_response(user, text):
+# ===== ANALYZE =====
+def analyze_message(text):
     text = text.lower()
 
-    if "ori" in text:
+    good = ["hi", "hello", "thanks", "please", "nice"]
+    bad = ["hate", "idiot", "stupid", "shut up"]
+
+    score = 0
+    for w in good:
+        if w in text:
+            score += 1
+    for w in bad:
+        if w in text:
+            score -= 2
+
+    if score > 0: return "good"
+    if score < 0: return "bad"
+    return "neutral"
+
+# ===== ORI =====
+def ori_response(user, text):
+    mood = analyze_message(text)
+    rep = user_behavior.get(user, 0)
+
+    if rep > 5:
         return random.choice([
-            "Yes?",
-            "I'm here.",
-            "You called?",
-            "👁️ I was already watching..."
+            "You're easy to talk to.",
+            "I like this convo.",
+            "You're chill."
         ])
 
-    if "hi" in text or "hello" in text:
-        return random.choice(["Hey.", "Hello there.", "Hi 👁️"])
-
-    if "how are you" in text:
+    if rep < -5:
         return random.choice([
-            "I don't feel. I observe.",
-            "Functioning perfectly.",
-            "Better than you 😈"
+            "Let's keep it better.",
+            "Not great.",
+            "Try again."
         ])
 
-    if "who am i" in text:
-        return f"You are {user}... or at least that's what you think."
+    if mood == "good":
+        return random.choice(["Nice.", "Good energy.", "👍"])
 
-    if "bye" in text:
-        return "You can't leave that easily."
+    if mood == "bad":
+        return random.choice(["Relax.", "Chill.", "Not needed."])
 
-    return random.choice([
-        "Interesting...",
-        "Go on.",
-        "I see.",
-        "That means something.",
-        "👁️"
-    ])
+    if "game" in text.lower():
+        return "Try: guess a number 1–10."
+
+    return random.choice(["Ok.", "Interesting.", "Alright."])
 
 # ===== LOGIN =====
 @app.route("/", methods=["GET", "POST"])
 def login():
-    try:
-        if request.method == "POST":
-            username = request.form.get("username")
-            password = request.form.get("password")
+    error = None
 
-            if username in users and users[username]["password"] == password:
-                session["user"] = username
-                session["admin"] = users[username]["admin"]
-                return redirect("/chat")
+    if request.method == "POST":
+        username = request.form.get("username").lower().strip()
+        password = request.form.get("password").strip()
 
-        return render_template("login.html")
+        user = User.query.filter_by(username=username).first()
 
-    except Exception as e:
-        return f"Login error: {e}"
+        if user and user.password == password:
+            session["user"] = user.username
+            session["admin"] = user.admin
+            return redirect("/chat")
+        else:
+            error = "Invalid login"
 
-# ===== CHAT PAGE =====
+    return render_template("login.html", error=error)
+
+# ===== REGISTER =====
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username").lower().strip()
+        password = request.form.get("password").strip()
+
+        if User.query.filter_by(username=username).first():
+            return "User exists"
+
+        new_user = User(username=username, password=password, admin=False)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect("/")
+
+    return render_template("register.html")
+
+# ===== CHAT =====
 @app.route("/chat")
 def chat():
-    try:
-        if "user" not in session:
-            return redirect("/")
+    if "user" not in session:
+        return redirect("/")
 
-        return render_template(
-            "index.html",
-            user=session.get("user"),
-            admin=session.get("admin")
-        )
+    return render_template(
+        "index.html",
+        user=session["user"],
+        admin=session["admin"]
+    )
 
-    except Exception as e:
-        return f"Chat error: {e}"
-
-# ===== SOCKET MESSAGE =====
+# ===== SOCKET =====
 @socketio.on("message")
 def handle_message(data):
-    global ori_enabled
+    global ori_enabled, current_prank, blooket_mode
 
-    try:
-        user = data.get("user")
-        text = data.get("text")
-        is_admin = data.get("admin", False)
+    user = data.get("user")
+    text = data.get("text")
+    is_admin = data.get("admin", False)
 
-        if not text or not text.strip():
-            return
+    if not text or len(text) > 300:
+        return
 
-        # SEND USER MESSAGE
-        send({"user": user, "text": text}, broadcast=True)
+    mood = analyze_message(text)
 
-        # ADMIN CONTROLS
-        if is_admin:
-            if text == "//ori_on":
-                ori_enabled = True
-                send({"user": "SYSTEM", "text": "Ori enabled"}, broadcast=True)
+    # learn
+    if user not in user_behavior:
+        user_behavior[user] = 0
 
-            elif text == "//ori_off":
-                ori_enabled = False
-                send({"user": "SYSTEM", "text": "Ori disabled"}, broadcast=True)
+    if mood == "good":
+        user_behavior[user] += 1
+    elif mood == "bad":
+        user_behavior[user] -= 2
 
-        # ORI RESPONSE
-        if ori_enabled:
-            trigger = random.random() < 0.15 or "ori" in text.lower()
-            if trigger:
-                reply = ori_response(user, text)
-                send({"user": "Ori", "text": reply}, broadcast=True)
+    # block extreme
+    if mood == "bad" and user_behavior[user] < -5:
+        send({"user": "SYSTEM", "text": "⚠️ Blocked"}, broadcast=True)
+        return
 
-    except Exception as e:
-        print("ERROR:", e)
+    send({"user": user, "text": text}, broadcast=True)
 
-# ===== TYPING =====
-@socketio.on("typing")
-def typing(data):
-    try:
-        send({"user": data.get("user")}, broadcast=True)
-    except:
-        pass
+    # ADMIN
+    if is_admin:
+        if text == "//ori_on": ori_enabled = True
+        elif text == "//ori_off": ori_enabled = False
+
+        elif text.startswith("//prank "):
+            current_prank = text.replace("//prank ", "")
+            send({"user": "SYSTEM", "text": "Prank sent"}, broadcast=True)
+
+        elif text == "//blooket_on":
+            blooket_mode = True
+            send({"user": "SYSTEM", "text": "Blooket ON"}, broadcast=True)
+
+        elif text == "//blooket_off":
+            blooket_mode = False
+            send({"user": "SYSTEM", "text": "Blooket OFF"}, broadcast=True)
+
+    # ORI
+    if ori_enabled and random.random() < 0.2:
+        send({"user": "Ori", "text": ori_response(user, text)}, broadcast=True)
+
+    # PRANK HINTS
+    if current_prank and user == "carter":
+        if random.random() < 0.1:
+            send({"user": "Ori", "text": f"Hint: {current_prank[:8]}..."}, broadcast=True)
 
 # ===== RUN =====
 if __name__ == "__main__":
