@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Games</title>
+    <style>
+        body {
+            background: #1e1f22;
+            color: white;
+            text-align: center;
+            font-family: Arial;
+        }
+        iframe {
+            width: 90%;
+            height: 500px;
+            border: none;
+            margin-top: 10px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>🎮 Games</h2>
+
+<button onclick="loadGame('snake')">Snake</button>
+<button onclick="loadGame('tetris')">Tetris</button>
+<button onclick="loadGame('pacman')">Pac-Man</button>
+
+<br>
+
+<iframe id="gameFrame"></iframe>
+
+<script>
+function loadGame(game) {
+    const frame = document.getElementById("gameFrame");
+
+    if (game === "snake") {
+        frame.src = "https://playsnake.org/";
+    }
+    if (game === "tetris") {
+        frame.src = "https://tetris.com/play-tetris";
+    }
+    if (game === "pacman") {
+        frame.src = "https://www.google.com/logos/2010/pacman10-i.html";
+    }
+}
+</script>
+
+</body>
+</html>
