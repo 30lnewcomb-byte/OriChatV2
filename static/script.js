@@ -1,55 +1,46 @@
 const socket = io();
-let user = prompt("Enter your name:");
+let user = prompt("Name:");
 
 const chat = document.getElementById("chat");
+const typingBox = document.getElementById("typing");
 
-// MESSAGE RENDER
+// MESSAGES
 socket.on("message", (data) => {
     let div = document.createElement("div");
-    div.classList.add("message");
+    div.classList.add("msg");
 
-    if (data.user === user) {
-        div.classList.add("me");
-    } else if (data.user === "Ori") {
-        div.classList.add("ori");
-    } else {
-        div.classList.add("other");
-    }
+    if (data.user === user) div.classList.add("me");
+    else if (data.user === "Ori") div.classList.add("ori");
+    else div.classList.add("other");
 
-    div.innerText = data.user + ": " + data.text;
-
+    div.innerHTML = `<b>${data.user}</b><br>${data.text}`;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
 });
 
+// TYPING
+function typing(){
+    socket.emit("typing", {user:user});
+}
+
+socket.on("typing", (data)=>{
+    typingBox.innerText = data.user + " is typing...";
+    setTimeout(()=>typingBox.innerText="",1000);
+});
+
 // SEND
-function sendMsg() {
-    let text = document.getElementById("msg").value;
-    socket.emit("message", {user:user, text:text});
-    document.getElementById("msg").value = "";
+function sendMsg(){
+    let msg = document.getElementById("msg");
+    socket.emit("message",{user:user,text:msg.value});
+    msg.value="";
 }
 
-// ADMIN PANEL
-if (user === "Liam") {
-    document.getElementById("adminPanel").style.display = "block";
-} else {
-    document.getElementById("adminPanel").style.display = "none";
+// ADMIN
+function toggleAdmin(){
+    let p = document.getElementById("adminPanel");
+    p.style.right = p.style.right === "0px" ? "-250px" : "0px";
 }
 
-function toggleOri(x){ socket.emit("message",{user,text:x?"//ori_on":"//ori_off"}) }
-function toggleMorse(x){ socket.emit("message",{user,text:x?"//morse_on":"//morse_off"}) }
-
-function setMorse(){
-    let v=document.getElementById("morseSlider").value;
-    socket.emit("message",{user,text:"//morse_level "+v})
-}
-
-function oriSay(){
-    let v=document.getElementById("oriText").value;
-    socket.emit("message",{user,text:"//ori_say "+v})
-}
-
-function oriMorse(){
-    let v=document.getElementById("oriText").value;
-    socket.emit("message",{user,text:"//ori_morse "+v})
+function ori(x){
+    socket.emit("message",{user:user,text:x?"//ori_on":"//ori_off"});
 }
