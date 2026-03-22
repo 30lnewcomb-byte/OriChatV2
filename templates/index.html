@@ -7,7 +7,6 @@
 <body>
 
 <div id="chat"></div>
-
 <div id="typing"></div>
 
 <div id="inputBar">
@@ -15,14 +14,19 @@
     <button onclick="sendMsg()">➤</button>
 </div>
 
-<!-- SLIDE ADMIN -->
+<!-- ADMIN -->
 <div id="adminToggle" onclick="toggleAdmin()">⚙️</div>
-
 <div id="adminPanel">
     <h3>Admin</h3>
     <button onclick="ori(true)">Ori ON</button>
     <button onclick="ori(false)">Ori OFF</button>
 </div>
+
+<!-- 🔥 THIS FIXES YOUR ERROR -->
+<script>
+    const USER = "{{ user }}";
+    const ADMIN = {{ admin|tojson }};
+</script>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script src="/static/script.js"></script>
