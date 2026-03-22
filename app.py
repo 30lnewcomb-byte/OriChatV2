@@ -1,128 +1,135 @@
 from flask import Flask, render_template, request, redirect, session
-from flask_socketio import SocketIO, send, emit
+from flask_socketio import SocketIO, send
 import random
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "secret123"
 
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# USERS (LOGIN)
+# ===== USERS =====
 users = {
-    "Liam": {"password": "Z7!qP2@vLm#8Xr", "admin": True},
-    "Carter": {"password": "B4$kT9^nW2*eQh", "admin": False}
+    "liam": {"password": "pass1", "admin": True},
+    "carter": {"password": "pass2", "admin": False}
 }
 
-# SYSTEM STATES
+# ===== ORI SETTINGS =====
 ori_enabled = True
-morse_enabled = True
-morse_chance = 0.25
 
-# MORSE CODE
-MORSE_CODE = {
-    'a': '.-', 'b': '-...', 'c': '-.-.', 'd': '-..', 'e': '.',
-    'f': '..-.', 'g': '--.', 'h': '....', 'i': '..',
-    'j': '.---', 'k': '-.-', 'l': '.-..', 'm': '--',
-    'n': '-.', 'o': '---', 'p': '.--.', 'q': '--.-',
-    'r': '.-.', 's': '...', 't': '-', 'u': '..-',
-    'v': '...-', 'w': '.--', 'x': '-..-', 'y': '-.--',
-    'z': '--..', ' ': '/'
-}
+# ===== ORI BRAIN =====
+def ori_response(user, text):
+    text = text.lower()
 
-def to_morse(text):
-    return ' '.join(MORSE_CODE.get(c.lower(), '') for c in text)
+    if "ori" in text:
+        return random.choice([
+            "Yes?",
+            "I'm here.",
+            "You called?",
+            "👁️ I was already watching..."
+        ])
 
-# LOGIN PAGE
-@app.route("/", methods=["GET", "POST"])
+    if "hi" in text or "hello" in text:
+        return random.choice(["Hey.", "Hello there.", "Hi 👁️"])
+
+    if "how are you" in text:
+        return random.choice([
+            "I don't feel. I observe.",
+            "Functioning perfectly.",
+            "Better than you 😈"
+        ])
+
+    if "who am i" in text:
+        return f"You are {user}... or at least that's what you think."
+
+    if "bye" in text:
+        return "You can't leave that easily."
+
+    return random.choice([
+        "Interesting...",
+        "Go on.",
+        "I see.",
+        "That means something.",
+        "👁️"
+    ])
+
+# ===== LOGIN ROUTE =====
+@app.route("/", methods=["GET", "POST", "HEAD"])
 def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    try:
+        if request.method == "POST":
+            username = request.form.get("username")
+            password = request.form.get("password")
 
-        if username in users and users[username]["password"] == password:
-            session["user"] = username
-            session["admin"] = users[username]["admin"]
-            return redirect("/chat")
+            if username in users and users[username]["password"] == password:
+                session["user"] = username
+                session["admin"] = users[username]["admin"]
+                return redirect("/chat")
 
-    return render_template("login.html")
+        return render_template("login.html")
 
-# CHAT PAGE
+    except Exception as e:
+        return f"Login error: {e}"
+
+# ===== CHAT PAGE =====
 @app.route("/chat")
 def chat():
-    if "user" not in session:
-        return redirect("/")
-    return render_template(
-        "index.html",
-        user=session["user"],
-        admin=session["admin"]
-    )
+    try:
+        if "user" not in session:
+            return redirect("/")
 
-# TYPING INDICATOR
-@socketio.on("typing")
-def typing(data):
-    emit("typing", data, broadcast=True)
+        return render_template(
+            "index.html",
+            user=session.get("user", "Unknown"),
+            admin=session.get("admin", False)
+        )
+    except Exception as e:
+        return f"Chat error: {e}"
 
-# CHAT SYSTEM
+# ===== SOCKET MESSAGE =====
 @socketio.on("message")
 def handle_message(data):
-    global ori_enabled, morse_enabled, morse_chance
+    global ori_enabled
 
-    user = data.get("user")
-    text = data.get("text")
-    is_admin = data.get("admin")
+    try:
+        user = data.get("user", "Unknown")
+        text = data.get("text", "")
+        is_admin = data.get("admin", False)
 
-    # SEND NORMAL MESSAGE
-    send({"user": user, "text": text}, broadcast=True)
-
-    # ADMIN CONTROLS
-    if is_admin:
-        if text == "//ori_on":
-            ori_enabled = True
-            send({"user": "System", "text": "🟢 Ori ON"}, broadcast=True)
+        if not text.strip():
             return
 
-        if text == "//ori_off":
-            ori_enabled = False
-            send({"user": "System", "text": "🔴 Ori OFF"}, broadcast=True)
-            return
+        # SEND USER MESSAGE
+        send({"user": user, "text": text}, broadcast=True)
 
-        if text == "//morse_on":
-            morse_enabled = True
-            send({"user": "System", "text": "📡 Morse ON"}, broadcast=True)
-            return
+        # ===== ADMIN COMMANDS =====
+        if is_admin:
+            if text == "//ori_on":
+                ori_enabled = True
+                send({"user": "SYSTEM", "text": "Ori enabled"}, broadcast=True)
 
-        if text == "//morse_off":
-            morse_enabled = False
-            send({"user": "System", "text": "📡 Morse OFF"}, broadcast=True)
-            return
+            elif text == "//ori_off":
+                ori_enabled = False
+                send({"user": "SYSTEM", "text": "Ori disabled"}, broadcast=True)
 
-        if text.startswith("//morse_level"):
-            try:
-                morse_chance = float(text.split(" ")[1])
-                send({"user": "System", "text": f"Morse level: {morse_chance}"}, broadcast=True)
-            except:
-                pass
-            return
+        # ===== ORI RESPONSE =====
+        if ori_enabled:
+            trigger = random.random() < 0.15 or "ori" in text.lower()
 
-        if text.startswith("//ori_say"):
-            msg = text.replace("//ori_say", "").strip()
-            send({"user": "Ori", "text": msg}, broadcast=True)
-            return
+            if trigger:
+                reply = ori_response(user, text)
+                send({"user": "Ori", "text": reply}, broadcast=True)
 
-        if text.startswith("//ori_morse"):
-            msg = text.replace("//ori_morse", "").strip()
-            send({"user": "Ori", "text": to_morse(msg)}, broadcast=True)
-            return
+    except Exception as e:
+        print("ERROR:", e)
 
-    # ORI RANDOM BEHAVIOR
-    if ori_enabled and random.random() < 0.2:
-        emit("typing", {"user": "Ori"}, broadcast=True)
-        send({"user": "Ori", "text": "👁️ I'm watching..."}, broadcast=True)
+# ===== TYPING =====
+@socketio.on("typing")
+def typing(data):
+    try:
+        send({"user": data.get("user", "")}, broadcast=True)
+    except:
+        pass
 
-    # MORSE RANDOM
-    if ori_enabled and morse_enabled and random.random() < morse_chance:
-        send({"user": "Ori", "text": "📡 " + to_morse(text)}, broadcast=True)
-
-# RUN APP
+# ===== RUN =====
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    socketio.run(app, debug=True)
