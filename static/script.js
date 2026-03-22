@@ -1,49 +1,58 @@
 const socket = io();
+let user = prompt("Name?");
 
-let user = prompt("Enter your name (Liam or Carter)");
-
-function send() {
-    let input = document.getElementById("msg");
-    let text = input.value;
-
-    socket.emit("message", {user: user, text: text});
-    input.value = "";
-}
-
-// CARTER ONLY GAME PANEL
-if (user === "Carter") {
-    const gameContainer = document.createElement("div");
-    gameContainer.innerHTML = `
-        <button onclick="socket.emit('message',{user:'Carter',text:'//game TicTacToe'})">TicTacToe</button>
-        <button onclick="socket.emit('message',{user:'Carter',text:'//game Trivia'})">Trivia</button>
-        <button onclick="socket.emit('message',{user:'Carter',text:'//game MemoryMatch'})">Memory Match</button>
-    `;
-    document.body.appendChild(gameContainer);
-}
+const chat = document.getElementById("chat");
 
 socket.on("message", (data) => {
-    let chat = document.getElementById("chat");
-    let msg = document.createElement("div");
-    msg.innerHTML = `<b>${data.user}:</b> ${data.text}`;
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-
-    if (data.glitch) {
-        document.body.classList.add("glitch");
-        setTimeout(()=>{document.body.classList.remove("glitch")},500);
-    }
+    let div = document.createElement("div");
+    div.innerText = data.user + ": " + data.text;
+    chat.appendChild(div);
 });
 
-// ADMIN PANEL
-socket.on("admin", (data) => {
-    let panel = document.createElement("div");
-    panel.style.position = "fixed";
-    panel.style.bottom = "20px";
-    panel.style.right = "20px";
-    panel.style.background = "black";
-    panel.style.color = "lime";
-    panel.style.padding = "10px";
-    panel.style.border = "1px solid lime";
-    panel.innerHTML = "<b>ADMIN PANEL</b><br>" + data.commands.join("<br>");
-    document.body.appendChild(panel);
-});
+function sendMsg() {
+    let text = document.getElementById("msg").value;
+    socket.emit("message", {user:user, text:text});
+}
+
+
+// ===== ADMIN PANEL =====
+if (user === "Liam") {
+    document.getElementById("adminPanel").style.display = "block";
+} else {
+    document.getElementById("adminPanel").style.display = "none";
+}
+
+// controls
+function toggleOri(x){ socket.emit("message",{user,text:x?"//ori_on":"//ori_off"}) }
+function toggleMorse(x){ socket.emit("message",{user,text:x?"//morse_on":"//morse_off"}) }
+function setMorse(){
+    let v=document.getElementById("morseSlider").value;
+    socket.emit("message",{user,text:"//morse_level "+v})
+}
+function oriSay(){
+    let v=document.getElementById("oriText").value;
+    socket.emit("message",{user,text:"//ori_say "+v})
+}
+function oriMorse(){
+    let v=document.getElementById("oriText").value;
+    socket.emit("message",{user,text:"//ori_morse "+v})
+}
+function alertSys(){ socket.emit("message",{user,text:"//ori_alert"}) }
+function glitch(){ socket.emit("message",{user,text:"//ori_glitch"}) }
+
+
+// ===== CARTER GAMES =====
+if (user === "Carter") {
+    document.getElementById("games").innerHTML = `
+        <h3>🎮 Games</h3>
+        <button onclick="openGame('snake')">Snake</button>
+        <button onclick="openGame('tetris')">Tetris</button>
+        <button onclick="openGame('pacman')">Pacman</button>
+    `;
+}
+
+function openGame(g){
+    if(g==="snake") window.open("https://playsnake.org/");
+    if(g==="tetris") window.open("https://tetris.com/play-tetris");
+    if(g==="pacman") window.open("https://playsnake.org/pacman");
+}
