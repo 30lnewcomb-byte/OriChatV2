@@ -8,26 +8,20 @@
 
 <div id="chat"></div>
 
+<div id="typing"></div>
+
 <div id="inputBar">
-    <input id="msg" placeholder="Type a message..." autocomplete="off">
-    <button onclick="sendMsg()">Send</button>
+    <input id="msg" placeholder="Message..." oninput="typing()">
+    <button onclick="sendMsg()">➤</button>
 </div>
 
-<!-- ADMIN PANEL -->
+<!-- SLIDE ADMIN -->
+<div id="adminToggle" onclick="toggleAdmin()">⚙️</div>
+
 <div id="adminPanel">
     <h3>Admin</h3>
-    <button onclick="toggleOri(true)">Ori ON</button>
-    <button onclick="toggleOri(false)">Ori OFF</button>
-
-    <button onclick="toggleMorse(true)">Morse ON</button>
-    <button onclick="toggleMorse(false)">Morse OFF</button>
-
-    <input type="range" min="0" max="1" step="0.1" id="morseSlider">
-    <button onclick="setMorse()">Set Morse</button>
-
-    <input id="oriText" placeholder="Ori message">
-    <button onclick="oriSay()">Send</button>
-    <button onclick="oriMorse()">Morse</button>
+    <button onclick="ori(true)">Ori ON</button>
+    <button onclick="ori(false)">Ori OFF</button>
 </div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
