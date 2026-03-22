@@ -1,41 +1,81 @@
 body {
     margin:0;
-    font-family:sans-serif;
-    background:#1a1a2e;
+    font-family: "Segoe UI", sans-serif;
+    background:#0f172a;
     color:white;
+}
+
+/* TOP BAR */
+#topBar {
+    display:flex;
+    align-items:center;
+    padding:10px;
+    background:#020617;
+    border-bottom:1px solid #1e293b;
+}
+
+#topBar span {
+    font-weight:bold;
 }
 
 /* CHAT */
 #chat {
     padding:10px;
-    height:85vh;
+    height:80vh;
     overflow-y:auto;
     display:flex;
     flex-direction:column;
 }
 
-/* BUBBLES */
+/* MESSAGE ROW */
 .msg {
-    padding:10px;
-    margin:5px;
-    border-radius:15px;
+    display:flex;
+    align-items:flex-end;
+    margin:6px 0;
+    animation: fadeIn 0.2s ease;
+}
+
+/* AVATAR */
+.avatar {
+    width:35px;
+    height:35px;
+    border-radius:50%;
+    margin-right:8px;
+    background:#334155;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+}
+
+/* BUBBLE */
+.bubble {
+    padding:10px 14px;
+    border-radius:18px;
     max-width:60%;
+    position:relative;
 }
 
-.me {
-    align-self:flex-end;
-    background:#4CAF50;
+/* COLORS */
+.me .bubble {
+    background:#22c55e;
+    margin-left:auto;
 }
 
-.other {
-    align-self:flex-start;
-    background:#333;
+.other .bubble {
+    background:#1e293b;
 }
 
-.ori {
-    align-self:center;
-    background:#ff0055;
+.ori .bubble {
+    background:#e11d48;
     font-style:italic;
+}
+
+/* TIME */
+.time {
+    font-size:10px;
+    opacity:0.6;
+    margin-top:3px;
 }
 
 /* INPUT */
@@ -44,33 +84,34 @@ body {
     bottom:0;
     width:100%;
     display:flex;
-    background:#111;
+    background:#020617;
+    border-top:1px solid #1e293b;
 }
 
 #msg {
     flex:1;
     padding:15px;
     border:none;
-    background:#222;
+    background:#0f172a;
     color:white;
 }
 
 button {
     padding:15px;
-    background:#4CAF50;
+    background:#22c55e;
     border:none;
     color:white;
+    cursor:pointer;
 }
 
 /* TYPING */
 #typing {
-    height:20px;
     padding-left:10px;
     font-size:12px;
-    color:#aaa;
+    color:#94a3b8;
 }
 
-/* ADMIN */
+/* ADMIN PANEL */
 #adminToggle {
     position:fixed;
     top:10px;
@@ -81,10 +122,17 @@ button {
 #adminPanel {
     position:fixed;
     top:0;
-    right:-250px;
-    width:250px;
+    right:-260px;
+    width:260px;
     height:100%;
-    background:#111;
-    padding:10px;
+    background:#020617;
+    padding:15px;
     transition:0.3s;
+    border-left:1px solid #1e293b;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(5px);}
+    to {opacity:1; transform:translateY(0);}
 }
