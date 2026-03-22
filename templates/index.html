@@ -8,38 +8,27 @@
 
 <div id="chat"></div>
 
-<input id="msg" placeholder="Type..." autocomplete="off">
-<button onclick="sendMsg()">Send</button>
+<div id="inputBar">
+    <input id="msg" placeholder="Type a message..." autocomplete="off">
+    <button onclick="sendMsg()">Send</button>
+</div>
 
 <!-- ADMIN PANEL -->
 <div id="adminPanel">
-    <h3>🧠 Ori Control</h3>
-
-    <button onclick="toggleOri(true)">ON</button>
-    <button onclick="toggleOri(false)">OFF</button>
-
-    <hr>
+    <h3>Admin</h3>
+    <button onclick="toggleOri(true)">Ori ON</button>
+    <button onclick="toggleOri(false)">Ori OFF</button>
 
     <button onclick="toggleMorse(true)">Morse ON</button>
     <button onclick="toggleMorse(false)">Morse OFF</button>
 
     <input type="range" min="0" max="1" step="0.1" id="morseSlider">
-    <button onclick="setMorse()">Set</button>
-
-    <hr>
+    <button onclick="setMorse()">Set Morse</button>
 
     <input id="oriText" placeholder="Ori message">
     <button onclick="oriSay()">Send</button>
     <button onclick="oriMorse()">Morse</button>
-
-    <hr>
-
-    <button onclick="alertSys()">Alert</button>
-    <button onclick="glitch()">Glitch</button>
 </div>
-
-<!-- GAMES (Carter only) -->
-<div id="games"></div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script src="/static/script.js"></script>
