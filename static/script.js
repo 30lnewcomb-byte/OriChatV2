@@ -1,10 +1,12 @@
 const socket = io();
-let user = prompt("Name:");
+
+const user = USER;
+const isAdmin = ADMIN;
 
 const chat = document.getElementById("chat");
 const typingBox = document.getElementById("typing");
 
-// MESSAGES
+// ===== MESSAGE DISPLAY =====
 socket.on("message", (data) => {
     let div = document.createElement("div");
     div.classList.add("msg");
@@ -14,11 +16,12 @@ socket.on("message", (data) => {
     else div.classList.add("other");
 
     div.innerHTML = `<b>${data.user}</b><br>${data.text}`;
+
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
 });
 
-// TYPING
+// ===== TYPING =====
 function typing(){
     socket.emit("typing", {user:user});
 }
@@ -28,19 +31,48 @@ socket.on("typing", (data)=>{
     setTimeout(()=>typingBox.innerText="",1000);
 });
 
-// SEND
+// ===== SEND MESSAGE =====
 function sendMsg(){
     let msg = document.getElementById("msg");
-    socket.emit("message",{user:user,text:msg.value});
-    msg.value="";
+
+    socket.emit("message", {
+        user: user,
+        text: msg.value,
+        admin: isAdmin   // 🔥 THIS FIXES EVERYTHING
+    });
+
+    msg.value = "";
 }
 
-// ADMIN
-function toggleAdmin(){
-    let p = document.getElementById("adminPanel");
-    p.style.right = p.style.right === "0px" ? "-250px" : "0px";
+// ===== ADMIN HELPER =====
+function sendAdmin(cmd){
+    socket.emit("message", {
+        user: user,
+        text: cmd,
+        admin: isAdmin
+    });
 }
 
+// ===== BUTTON FUNCTIONS (ALL FIXED) =====
 function ori(x){
-    socket.emit("message",{user:user,text:x?"//ori_on":"//ori_off"});
+    sendAdmin(x ? "//ori_on" : "//ori_off");
+}
+
+function toggleMorse(x){
+    sendAdmin(x ? "//morse_on" : "//morse_off");
+}
+
+function setMorse(){
+    let v = document.getElementById("morseSlider").value;
+    sendAdmin("//morse_level " + v);
+}
+
+function oriSay(){
+    let v = document.getElementById("oriText").value;
+    sendAdmin("//ori_say " + v);
+}
+
+function oriMorse(){
+    let v = document.getElementById("oriText").value;
+    sendAdmin("//ori_morse " + v);
 }
