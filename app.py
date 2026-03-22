@@ -5,7 +5,8 @@ import random
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+# IMPORTANT: no eventlet issues
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # ===== USERS =====
 users = {
@@ -17,7 +18,7 @@ users = {
         "password": "T4m$8Wd^1Yb!Ns",
         "admin": False
     }
-
+}
 
 # ===== ORI SETTINGS =====
 ori_enabled = True
@@ -58,8 +59,8 @@ def ori_response(user, text):
         "👁️"
     ])
 
-# ===== LOGIN ROUTE =====
-@app.route("/", methods=["GET", "POST", "HEAD"])
+# ===== LOGIN =====
+@app.route("/", methods=["GET", "POST"])
 def login():
     try:
         if request.method == "POST":
@@ -85,9 +86,10 @@ def chat():
 
         return render_template(
             "index.html",
-            user=session.get("user", "Unknown"),
-            admin=session.get("admin", False)
+            user=session.get("user"),
+            admin=session.get("admin")
         )
+
     except Exception as e:
         return f"Chat error: {e}"
 
@@ -97,17 +99,17 @@ def handle_message(data):
     global ori_enabled
 
     try:
-        user = data.get("user", "Unknown")
-        text = data.get("text", "")
+        user = data.get("user")
+        text = data.get("text")
         is_admin = data.get("admin", False)
 
-        if not text.strip():
+        if not text or not text.strip():
             return
 
         # SEND USER MESSAGE
         send({"user": user, "text": text}, broadcast=True)
 
-        # ===== ADMIN COMMANDS =====
+        # ADMIN CONTROLS
         if is_admin:
             if text == "//ori_on":
                 ori_enabled = True
@@ -117,10 +119,9 @@ def handle_message(data):
                 ori_enabled = False
                 send({"user": "SYSTEM", "text": "Ori disabled"}, broadcast=True)
 
-        # ===== ORI RESPONSE =====
+        # ORI RESPONSE
         if ori_enabled:
             trigger = random.random() < 0.15 or "ori" in text.lower()
-
             if trigger:
                 reply = ori_response(user, text)
                 send({"user": "Ori", "text": reply}, broadcast=True)
@@ -132,7 +133,7 @@ def handle_message(data):
 @socketio.on("typing")
 def typing(data):
     try:
-        send({"user": data.get("user", "")}, broadcast=True)
+        send({"user": data.get("user")}, broadcast=True)
     except:
         pass
 
