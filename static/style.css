@@ -1,80 +1,90 @@
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #1e1e2f;
-    color: white;
+    margin:0;
+    font-family:sans-serif;
+    background:#1a1a2e;
+    color:white;
 }
 
 /* CHAT */
 #chat {
-    height: 85vh;
-    overflow-y: scroll;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
+    padding:10px;
+    height:85vh;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
 }
 
-/* MESSAGES */
-.message {
-    max-width: 60%;
-    padding: 10px;
-    margin: 5px;
-    border-radius: 15px;
-    font-size: 14px;
+/* BUBBLES */
+.msg {
+    padding:10px;
+    margin:5px;
+    border-radius:15px;
+    max-width:60%;
 }
 
-/* YOU */
 .me {
-    align-self: flex-end;
-    background: #4CAF50;
+    align-self:flex-end;
+    background:#4CAF50;
 }
 
-/* OTHERS */
 .other {
-    align-self: flex-start;
-    background: #2a2a40;
+    align-self:flex-start;
+    background:#333;
 }
 
-/* ORI */
 .ori {
-    align-self: center;
-    background: #ff0055;
-    font-style: italic;
+    align-self:center;
+    background:#ff0055;
+    font-style:italic;
 }
 
-/* INPUT BAR */
+/* INPUT */
 #inputBar {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    background: #111;
+    position:fixed;
+    bottom:0;
+    width:100%;
+    display:flex;
+    background:#111;
 }
 
 #msg {
-    flex: 1;
-    padding: 15px;
-    border: none;
-    outline: none;
-    background: #222;
-    color: white;
+    flex:1;
+    padding:15px;
+    border:none;
+    background:#222;
+    color:white;
 }
 
 button {
-    padding: 15px;
-    border: none;
-    background: #4CAF50;
-    color: white;
-    cursor: pointer;
+    padding:15px;
+    background:#4CAF50;
+    border:none;
+    color:white;
 }
 
-/* ADMIN PANEL */
+/* TYPING */
+#typing {
+    height:20px;
+    padding-left:10px;
+    font-size:12px;
+    color:#aaa;
+}
+
+/* ADMIN */
+#adminToggle {
+    position:fixed;
+    top:10px;
+    right:10px;
+    cursor:pointer;
+}
+
 #adminPanel {
-    position: fixed;
-    right: 10px;
-    top: 10px;
-    background: #111;
-    padding: 10px;
-    border-radius: 10px;
-    display: none;
+    position:fixed;
+    top:0;
+    right:-250px;
+    width:250px;
+    height:100%;
+    background:#111;
+    padding:10px;
+    transition:0.3s;
 }
