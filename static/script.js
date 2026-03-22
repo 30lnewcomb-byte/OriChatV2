@@ -4,47 +4,79 @@ const user = USER;
 const isAdmin = ADMIN;
 
 const chat = document.getElementById("chat");
-const typingBox = document.getElementById("typing");
 
-// ===== MESSAGE DISPLAY =====
+// TIME
+function getTime(){
+    let d = new Date();
+    return d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0');
+}
+
+// AVATAR LETTER
+function avatarLetter(name){
+    return name.charAt(0).toUpperCase();
+}
+
+// MESSAGE DISPLAY
 socket.on("message", (data) => {
-    let div = document.createElement("div");
-    div.classList.add("msg");
 
-    if (data.user === user) div.classList.add("me");
-    else if (data.user === "Ori") div.classList.add("ori");
-    else div.classList.add("other");
+    let row = document.createElement("div");
+    row.classList.add("msg");
 
-    div.innerHTML = `<b>${data.user}</b><br>${data.text}`;
+    if (data.user === user) row.classList.add("me");
+    else if (data.user === "Ori") row.classList.add("ori");
+    else row.classList.add("other");
 
-    chat.appendChild(div);
+    // avatar
+    let avatar = document.createElement("div");
+    avatar.classList.add("avatar");
+    avatar.innerText = avatarLetter(data.user);
+
+    // bubble
+    let bubble = document.createElement("div");
+    bubble.classList.add("bubble");
+
+    bubble.innerHTML = `
+        <b>${data.user}</b><br>
+        ${data.text}
+        <div class="time">${getTime()}</div>
+    `;
+
+    // layout
+    if (data.user === user){
+        row.appendChild(bubble);
+    } else {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+    }
+
+    chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
 });
 
-// ===== TYPING =====
-function typing(){
-    socket.emit("typing", {user:user});
-}
-
-socket.on("typing", (data)=>{
-    typingBox.innerText = data.user + " is typing...";
-    setTimeout(()=>typingBox.innerText="",1000);
-});
-
-// ===== SEND MESSAGE =====
+// SEND
 function sendMsg(){
     let msg = document.getElementById("msg");
 
     socket.emit("message", {
         user: user,
         text: msg.value,
-        admin: isAdmin   // 🔥 THIS FIXES EVERYTHING
+        admin: isAdmin
     });
 
-    msg.value = "";
+    msg.value="";
 }
 
-// ===== ADMIN HELPER =====
+// ENTER KEY
+document.getElementById("msg").addEventListener("keypress", function(e){
+    if(e.key === "Enter") sendMsg();
+});
+
+// ADMIN
+function toggleAdmin(){
+    let p = document.getElementById("adminPanel");
+    p.style.right = p.style.right === "0px" ? "-260px" : "0px";
+}
+
 function sendAdmin(cmd){
     socket.emit("message", {
         user: user,
@@ -53,26 +85,6 @@ function sendAdmin(cmd){
     });
 }
 
-// ===== BUTTON FUNCTIONS (ALL FIXED) =====
 function ori(x){
     sendAdmin(x ? "//ori_on" : "//ori_off");
-}
-
-function toggleMorse(x){
-    sendAdmin(x ? "//morse_on" : "//morse_off");
-}
-
-function setMorse(){
-    let v = document.getElementById("morseSlider").value;
-    sendAdmin("//morse_level " + v);
-}
-
-function oriSay(){
-    let v = document.getElementById("oriText").value;
-    sendAdmin("//ori_say " + v);
-}
-
-function oriMorse(){
-    let v = document.getElementById("oriText").value;
-    sendAdmin("//ori_morse " + v);
 }
