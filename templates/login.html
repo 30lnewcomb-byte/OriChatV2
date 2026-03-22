@@ -1,22 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - OriChat</title>
+    <title>OriChat Login</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body style="display:flex;justify-content:center;align-items:center;height:100vh;">
+<body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;">
 
-<form method="POST" style="background:#020617;padding:30px;border-radius:10px;">
-    <h2>Login</h2>
+<div style="
+    background:#020617;
+    padding:40px;
+    border-radius:15px;
+    box-shadow:0 0 20px rgba(0,0,0,0.5);
+    width:300px;
+    text-align:center;
+">
 
-    <input name="username" placeholder="Username" required
-        style="display:block;margin:10px 0;padding:10px;width:200px;">
+    <h1 style="margin-bottom:20px;">💬 OriChat</h1>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:20px;">
+        Login to continue
+    </p>
 
-    <input name="password" type="password" placeholder="Password" required
-        style="display:block;margin:10px 0;padding:10px;width:200px;">
+    <form method="POST">
 
-    <button type="submit" style="width:100%;padding:10px;">Login</button>
-</form>
+        <input name="username" placeholder="Username" required
+        style="
+            width:100%;
+            padding:12px;
+            margin:10px 0;
+            border:none;
+            border-radius:8px;
+            background:#0f172a;
+            color:white;
+        ">
+
+        <input name="password" type="password" placeholder="Password" required
+        style="
+            width:100%;
+            padding:12px;
+            margin:10px 0;
+            border:none;
+            border-radius:8px;
+            background:#0f172a;
+            color:white;
+        ">
+
+        <button type="submit"
+        style="
+            width:100%;
+            padding:12px;
+            margin-top:10px;
+            border:none;
+            border-radius:8px;
+            background:#22c55e;
+            color:white;
+            font-weight:bold;
+            cursor:pointer;
+        ">
+            Login
+        </button>
+
+    </form>
+
+</div>
 
 </body>
 </html>
