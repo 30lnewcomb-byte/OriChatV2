@@ -6,31 +6,41 @@
 </head>
 <body>
 
+<!-- TOP BAR -->
 <div id="topBar">
-<span>OriChat</span>
-<button onclick="logout()">Logout</button>
+    <span>OriChat</span>
+
+    <div>
+        <button onclick="window.location.href='/games'">🎮 Games</button>
+        <button onclick="logout()">Logout</button>
+    </div>
 </div>
 
+<!-- CHAT -->
 <div id="chat"></div>
 
+<!-- INPUT -->
 <div id="inputBar">
-<input id="msg" placeholder="Message..." onkeydown="if(event.key==='Enter') sendMsg()">
-<button onclick="sendMsg()">➤</button>
+    <input id="msg" placeholder="Message..." onkeydown="if(event.key==='Enter') sendMsg()">
+    <button onclick="sendMsg()">➤</button>
 </div>
 
+<!-- ADMIN PANEL -->
 {% if admin %}
 <div id="adminPanel">
-<button onclick="sendCommand('//ori_on')">Ori ON</button>
-<button onclick="sendCommand('//ori_off')">Ori OFF</button>
-<button onclick="sendCommand('//blooket_on')">Blooket ON</button>
-<button onclick="sendCommand('//blooket_off')">Blooket OFF</button>
-<button onclick="pushPrank()">Push Prank</button>
+    <h3>Admin</h3>
+
+    <button onclick="sendCommand('//ori_on')">Ori ON</button>
+    <button onclick="sendCommand('//ori_off')">Ori OFF</button>
+
+    <button onclick="pushPrank()">Push Prank</button>
 </div>
 {% endif %}
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
 const socket = io();
+
 const username = "{{ user }}";
 const isAdmin = {{ 'true' if admin else 'false' }};
 
@@ -58,16 +68,21 @@ socket.on("message", data => {
 
     div.innerHTML = `<b>${data.user}</b><br>${data.text}`;
     chat.appendChild(div);
+
     chat.scrollTop = chat.scrollHeight;
 });
 
 function sendCommand(cmd){
-    socket.send({user: username, text: cmd, admin: isAdmin});
+    socket.send({
+        user: username,
+        text: cmd,
+        admin: isAdmin
+    });
 }
 
 function pushPrank(){
-    let p = prompt("Enter prank:");
-    if(p) sendCommand("//prank " + p);
+    let prank = prompt("Enter prank:");
+    if(prank) sendCommand("//prank " + prank);
 }
 
 function logout(){
