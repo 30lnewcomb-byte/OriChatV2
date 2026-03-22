@@ -1,29 +1,12 @@
-@app.route("/", methods=["GET", "POST", "HEAD"])
-def login():
-    error = None
+<h2>Login</h2>
+<form method="POST">
+<input name="username" placeholder="Username" required><br>
+<input name="password" type="password" placeholder="Password" required><br>
+<button type="submit">Login</button>
+</form>
 
-    try:
-        if request.method == "POST":
-            username = request.form.get("username", "").strip().lower()
-            password = request.form.get("password", "").strip()
+<a href="/register">Register</a>
 
-            print("LOGIN ATTEMPT:", username, password)
-
-            if username in users:
-                if users[username]["password"] == password:
-                    session["user"] = username
-                    session["admin"] = users[username]["admin"]
-
-                    print("LOGIN SUCCESS")
-                    return redirect("/chat")
-                else:
-                    error = "Wrong password"
-                    print("WRONG PASSWORD")
-            else:
-                error = "User not found"
-                print("USER NOT FOUND")
-
-        return render_template("login.html", error=error)
-
-    except Exception as e:
-        return f"Login error: {e}"
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
