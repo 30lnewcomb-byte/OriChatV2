@@ -9,9 +9,15 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # ===== USERS =====
 users = {
-    "liam": {"password": "pass1", "admin": True},
-    "carter": {"password": "pass2", "admin": False}
-}
+    "liam": {
+        "password": "L9v#2Qx!7Zp@rK",
+        "admin": True
+    },
+    "carter": {
+        "password": "T4m$8Wd^1Yb!Ns",
+        "admin": False
+    }
+
 
 # ===== ORI SETTINGS =====
 ori_enabled = True
