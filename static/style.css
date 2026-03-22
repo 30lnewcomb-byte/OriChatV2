@@ -1,34 +1,23 @@
 body {
     background: black;
-    color: white;
-    font-family: Arial;
+    color: lime;
+    font-family: monospace;
 }
 
 #chat {
     height: 300px;
-    overflow-y: auto;
-    border: 1px solid #444;
+    overflow-y: scroll;
+    border: 1px solid lime;
     margin-bottom: 10px;
+    padding: 5px;
+}
+
+#adminPanel {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    background: black;
+    border: 1px solid lime;
     padding: 10px;
-}
-
-input {
-    padding: 10px;
-}
-
-button {
-    padding: 10px;
-}
-
-/* GLITCH EFFECT */
-.glitch {
-    animation: glitch 0.2s infinite;
-}
-
-@keyframes glitch {
-  0% { transform: translate(0); }
-  25% { transform: translate(-2px, 2px); }
-  50% { transform: translate(2px, -2px); }
-  75% { transform: translate(-2px, -2px); }
-  100% { transform: translate(0); }
+    width: 200px;
 }
