@@ -5,7 +5,7 @@ body {
     color: white;
 }
 
-/* CHAT AREA */
+/* CHAT */
 #chat {
     height: 85vh;
     overflow-y: scroll;
@@ -14,7 +14,7 @@ body {
     flex-direction: column;
 }
 
-/* MESSAGE BUBBLES */
+/* MESSAGES */
 .message {
     max-width: 60%;
     padding: 10px;
@@ -29,7 +29,7 @@ body {
     background: #4CAF50;
 }
 
-/* OTHER */
+/* OTHERS */
 .other {
     align-self: flex-start;
     background: #2a2a40;
@@ -66,4 +66,15 @@ button {
     background: #4CAF50;
     color: white;
     cursor: pointer;
+}
+
+/* ADMIN PANEL */
+#adminPanel {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    background: #111;
+    padding: 10px;
+    border-radius: 10px;
+    display: none;
 }
