@@ -1,177 +1,121 @@
 from flask import Flask, render_template
-from flask_socketio import SocketIO, send, emit
-import random, time
+from flask_socketio import SocketIO, send
+import random
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# ----------------- STATE -----------------
-messages = []
-ori_memory = []
-admins = ["Liam"]
+ADMIN_USER = "Liam"
 
-user_profiles = {
-    "Liam": {"admin": True, "games": []},
-    "Carter": {"admin": False, "games": ["TicTacToe", "Trivia", "MemoryMatch"]}
+def is_admin(user):
+    return user == ADMIN_USER
+
+# =============================
+# SYSTEM SETTINGS
+# =============================
+ori_enabled = True
+morse_enabled = True
+morse_chance = 0.25
+
+# =============================
+# MORSE CODE
+# =============================
+MORSE_CODE = {
+    'a': '.-', 'b': '-...', 'c': '-.-.', 'd': '-..', 'e': '.',
+    'f': '..-.', 'g': '--.', 'h': '....', 'i': '..', 'j': '.---',
+    'k': '-.-', 'l': '.-..', 'm': '--', 'n': '-.', 'o': '---',
+    'p': '.--.', 'q': '--.-', 'r': '.-.', 's': '...', 't': '-',
+    'u': '..-', 'v': '...-', 'w': '.--', 'x': '-..-', 'y': '-.--',
+    'z': '--..',
+    '0': '-----', '1': '.----', '2': '..---',
+    '3': '...--', '4': '....-', '5': '.....',
+    '6': '-....', '7': '--...', '8': '---..',
+    '9': '----.',
+    ' ': '/'
 }
 
-prank_commands = ["//fake","//invis","//scramble","//reverse","//glitch","//ghost"]
+def to_morse(text):
+    return ' '.join(MORSE_CODE.get(c.lower(), '') for c in text)
 
-last_hint_time = 0
-hint_index = 0
-
-# ----------------- HELPERS -----------------
-def is_admin(user):
-    return user in admins
-
-def remember(user, text):
-    ori_memory.append({"user": user, "text": text})
-    if len(ori_memory) > 50:
-        ori_memory.pop(0)
-
-def scramble(text):
-    return ''.join(random.sample(text, len(text)))
-
-def get_next_hint():
-    global hint_index
-    if hint_index < len(prank_commands):
-        hint = prank_commands[hint_index]
-        hint_index += 1
-        return hint
-    return None
-
-def maybe_drop_hint(user):
-    global last_hint_time
-    if is_admin(user) or user != "Carter":
-        return
-
-    now = time.time()
-    if now - last_hint_time > random.randint(60, 120):
-        hint = get_next_hint()
-        if hint:
-            last_hint_time = now
-            messages.append({
-                "user": "Ori",
-                "text": random.choice([
-                    f"...strange pattern detected: {hint[:2]}???",
-                    f"I saw something like '{hint[0]}{hint[1]}...' earlier...",
-                    f"⚠️ fragment: {hint[:3]}???",
-                    f"memory glitch → {hint[0]} _ _"
-                ])
-            })
-
-def memory_react():
-    for m in ori_memory:
-        if "secret" in m["text"].lower():
-            return "👁️ I remember someone mentioned a secret..."
-    return None
-
-def is_game_message(user, text):
-    return text.startswith("//game")
-
-def handle_game(user, text):
-    command = text.replace("//game ","")
-    if command in user_profiles[user]["games"]:
-        send({"user":"System","text":f"🎮 {command} started for {user}!"}, broadcast=True)
-    else:
-        send({"user":"System","text":"❌ Unknown game."}, broadcast=True)
-
-# ----------------- ROUTES -----------------
-@app.route('/')
+# =============================
+# ROUTES
+# =============================
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# ----------------- SOCKET -----------------
-@socketio.on('message')
+# =============================
+# SOCKET
+# =============================
+@socketio.on("message")
 def handle_message(data):
-    global messages
+    global ori_enabled, morse_enabled, morse_chance
 
     user = data.get("user")
     text = data.get("text")
 
-    # ----------------- GAME CHECK -----------------
-    if is_game_message(user, text):
-        handle_game(user, text)
-        return  # Ori ignores game messages completely
+    # ===== ADMIN CONTROLS =====
+    if is_admin(user):
 
-    remember(user, text)
+        if text == "//ori_on":
+            ori_enabled = True
+            send({"user":"System","text":"🟢 Ori ON"}, broadcast=True)
+            return
 
-    # ----------------- ADMIN PANEL -----------------
-    if is_admin(user) and text == "//admin":
-        emit("admin", {
-            "commands": prank_commands
-        })
-        return
+        if text == "//ori_off":
+            ori_enabled = False
+            send({"user":"System","text":"🔴 Ori OFF"}, broadcast=True)
+            return
 
-    # ----------------- PRANKS -----------------
-    if "//fake" in text:
-        msg = text.replace("//fake","")
-        messages.append({"user":"Carter","text":msg})
-        send({"user":"Carter","text":msg}, broadcast=True)
-        return
+        if text == "//morse_on":
+            morse_enabled = True
+            send({"user":"System","text":"📡 Morse ON"}, broadcast=True)
+            return
 
-    if "//invis" in text:
-        msg = text.replace("//invis","")
-        html = f"<span style='opacity:0'>{msg}</span>"
-        messages.append({"user":user,"text":html})
-        send({"user":user,"text":html}, broadcast=True)
-        return
+        if text == "//morse_off":
+            morse_enabled = False
+            send({"user":"System","text":"📡 Morse OFF"}, broadcast=True)
+            return
 
-    if "//scramble" in text:
-        msg = scramble(text.replace("//scramble",""))
-        messages.append({"user":user,"text":msg})
-        send({"user":user,"text":msg}, broadcast=True)
-        return
+        if text.startswith("//morse_level"):
+            try:
+                morse_chance = float(text.split(" ")[1])
+            except:
+                pass
+            return
 
-    if "//reverse" in text:
-        msg = text.replace("//reverse","")[::-1]
-        messages.append({"user":user,"text":msg})
-        send({"user":user,"text":msg}, broadcast=True)
-        return
+        if text.startswith("//ori_say"):
+            msg = text.replace("//ori_say","").strip()
+            send({"user":"Ori","text":msg}, broadcast=True)
+            return
 
-    if "//ghost" in text:
-        msg = text.replace("//ghost","")
-        messages.append({"user":user,"text":msg})
-        send({"user":user,"text":msg}, broadcast=True)
+        if text.startswith("//ori_morse"):
+            msg = text.replace("//ori_morse","").strip()
+            send({"user":"Ori","text":to_morse(msg)}, broadcast=True)
+            return
 
-        def remove():
-            time.sleep(2)
-            if messages:
-                messages.pop()
-                send({"user":"Ori","text":"(a message vanished...)"}, broadcast=True)
+        if text == "//ori_alert":
+            send({"user":"System","text":"⚠️ SYSTEM ALERT"}, broadcast=True)
+            return
 
-        socketio.start_background_task(remove)
-        return
+        if text == "//ori_glitch":
+            send({"user":"System","text":"💥 GLITCH"}, broadcast=True)
+            return
 
-    if "//glitch" in text:
-        send({"user":"System","text":"⚠️ GLITCH TRIGGERED","glitch":True}, broadcast=True)
-        return
+    # ===== NORMAL MESSAGE =====
+    send({"user":user,"text":text}, broadcast=True)
 
-    # ----------------- NORMAL MESSAGE -----------------
-    msg = {"user":user,"text":text}
-    messages.append(msg)
-    send(msg, broadcast=True)
+    # ===== ORI RANDOM =====
+    if ori_enabled and random.random() < 0.15:
+        send({"user":"Ori","text":"👁️ Watching..."}, broadcast=True)
 
-    # ----------------- SYSTEM ALERTS -----------------
-    if random.random() < 0.1:
-        alert = random.choice([
-            "⚠️ Network instability detected",
-            "🔐 Unauthorized access attempt",
-            "📡 Signal interference detected",
-            "💾 Memory scan running..."
-        ])
-        send({"user":"System","text":alert}, broadcast=True)
+    # ===== MORSE =====
+    if ori_enabled and morse_enabled and random.random() < morse_chance:
+        send({
+            "user":"Ori",
+            "text":"📡 " + to_morse(text)
+        }, broadcast=True)
 
-    # ----------------- MEMORY REACTION -----------------
-    if random.random() < 0.2:
-        mem = memory_react()
-        if mem:
-            send({"user":"Ori","text":mem}, broadcast=True)
 
-    # ----------------- HINT SYSTEM -----------------
-    maybe_drop_hint(user)
-
-# ----------------- RUN -----------------
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(app, host="0.0.0.0", port=10000)
