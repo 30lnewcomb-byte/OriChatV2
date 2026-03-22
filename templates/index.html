@@ -1,35 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OriChat</title>
-    <link rel="stylesheet" href="/static/style.css">
+<title>OriChat</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
+<div id="topBar">
+<span>OriChat</span>
+<button onclick="logout()">Logout</button>
+</div>
+
 <div id="chat"></div>
-<div id="typing"></div>
 
 <div id="inputBar">
-    <input id="msg" placeholder="Message..." oninput="typing()">
-    <button onclick="sendMsg()">➤</button>
+<input id="msg" placeholder="Message..." onkeydown="if(event.key==='Enter') sendMsg()">
+<button onclick="sendMsg()">➤</button>
 </div>
 
-<!-- ADMIN -->
-<div id="adminToggle" onclick="toggleAdmin()">⚙️</div>
+{% if admin %}
 <div id="adminPanel">
-    <h3>Admin</h3>
-    <button onclick="ori(true)">Ori ON</button>
-    <button onclick="ori(false)">Ori OFF</button>
+<button onclick="sendCommand('//ori_on')">Ori ON</button>
+<button onclick="sendCommand('//ori_off')">Ori OFF</button>
+<button onclick="sendCommand('//blooket_on')">Blooket ON</button>
+<button onclick="sendCommand('//blooket_off')">Blooket OFF</button>
+<button onclick="pushPrank()">Push Prank</button>
 </div>
-
-<!-- 🔥 THIS FIXES YOUR ERROR -->
-<script>
-    const USER = "{{ user }}";
-    const ADMIN = {{ admin|tojson }};
-</script>
+{% endif %}
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-<script src="/static/script.js"></script>
+<script>
+const socket = io();
+const username = "{{ user }}";
+const isAdmin = {{ 'true' if admin else 'false' }};
+
+function sendMsg() {
+    let input = document.getElementById("msg");
+
+    socket.send({
+        user: username,
+        text: input.value,
+        admin: isAdmin
+    });
+
+    input.value = "";
+}
+
+socket.on("message", data => {
+    let chat = document.getElementById("chat");
+
+    let div = document.createElement("div");
+    div.classList.add("message");
+
+    if (data.user === username) div.classList.add("me");
+    else if (data.user === "SYSTEM") div.classList.add("system");
+    else div.classList.add("other");
+
+    div.innerHTML = `<b>${data.user}</b><br>${data.text}`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+});
+
+function sendCommand(cmd){
+    socket.send({user: username, text: cmd, admin: isAdmin});
+}
+
+function pushPrank(){
+    let p = prompt("Enter prank:");
+    if(p) sendCommand("//prank " + p);
+}
+
+function logout(){
+    window.location.href = "/";
+}
+</script>
 
 </body>
 </html>
