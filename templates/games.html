@@ -1,24 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Carter Survival Game</title>
+<title>Carter Survival</title>
 <style>
-body { margin:0; overflow:hidden; background:black; }
+body { margin:0; overflow:hidden; background:black; font-family:monospace; }
+#menu, #settings {
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    text-align:center;
+}
+button {
+    padding:10px;
+    margin:5px;
+    background:#222;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
 #ui {
     position:absolute;
     top:10px;
     left:10px;
     color:white;
-    font-family:monospace;
 }
 </style>
 </head>
 <body>
 
+<!-- MENU -->
+<div id="menu">
+    <h1>ISLAND SURVIVAL</h1>
+    <button onclick="startGame()">Play</button><br>
+    <button onclick="openSettings()">Settings</button>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" style="display:none;">
+    <h2>Settings</h2>
+    <button onclick="toggleSound()">Sound: <span id="sound">ON</span></button><br>
+    <button onclick="setDifficulty('easy')">Baby Mode</button>
+    <button onclick="setDifficulty('medium')">Childish Mode</button>
+    <button onclick="setDifficulty('hard')">Toughest Boy</button><br><br>
+    <button onclick="closeSettings()">Back</button>
+</div>
+
 <canvas id="game"></canvas>
 
-<div id="ui">
-    <div id="objective">Objective: Find the house</div>
+<div id="ui" style="display:none;">
+    <div id="objective"></div>
     <div id="time"></div>
 </div>
 
@@ -28,15 +59,46 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let gameStarted = false;
+
+// SETTINGS
+let soundOn = true;
+let difficulty = "medium";
+
+function toggleSound(){
+    soundOn = !soundOn;
+    document.getElementById("sound").innerText = soundOn ? "ON" : "OFF";
+}
+
+function setDifficulty(d){
+    difficulty = d;
+}
+
+function openSettings(){
+    document.getElementById("menu").style.display="none";
+    document.getElementById("settings").style.display="block";
+}
+
+function closeSettings(){
+    document.getElementById("settings").style.display="none";
+    document.getElementById("menu").style.display="block";
+}
+
+function startGame(){
+    document.getElementById("menu").style.display="none";
+    document.getElementById("ui").style.display="block";
+    gameStarted = true;
+}
+
 // PLAYER
-let player = { x:400, y:300, speed:3 };
+let player = { x:400, y:300 };
 
 // INPUT
 let keys = {};
 document.onkeydown = e => keys[e.key.toLowerCase()] = true;
 document.onkeyup = e => keys[e.key.toLowerCase()] = false;
 
-// MOUSE (FLASHLIGHT)
+// MOUSE
 let mouse = {x:0,y:0};
 document.onmousemove = e => {
     mouse.x = e.clientX;
@@ -55,12 +117,22 @@ let time = 0;
 let isNight = false;
 
 // MONSTER
-let monster = { x:100, y:100, active:false };
+let monster = { x:100, y:100, active:false, speed:1.5 };
 
 // OBJECTIVE
-let objective = "Find the house";
+let objective = "Reach the house on the island...";
+let reachedHouse = false;
+
+// RAIN
+let rain = [];
+for(let i=0;i<100;i++){
+    rain.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height});
+}
 
 function update(){
+
+    if(!gameStarted) return;
+
     let speed = keys["shift"] ? 5 : 3;
 
     if(keys["w"]) player.y -= speed;
@@ -73,6 +145,11 @@ function update(){
     if(time > 100) time = 0;
     isNight = time > 50;
 
+    // DIFFICULTY
+    if(difficulty === "easy") monster.speed = 1;
+    if(difficulty === "medium") monster.speed = 1.5;
+    if(difficulty === "hard") monster.speed = 2.5;
+
     // MONSTER AI
     if(isNight){
         monster.active = true;
@@ -81,9 +158,26 @@ function update(){
         let dy = player.y - monster.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
 
-        monster.x += (dx/dist) * 1.5;
-        monster.y += (dy/dist) * 1.5;
+        monster.x += (dx/dist) * monster.speed;
+        monster.y += (dy/dist) * monster.speed;
     }
+
+    // HOUSE (INTRO STORY TRIGGER)
+    let house = {x:800, y:300};
+
+    if(Math.abs(player.x - house.x) < 40 && Math.abs(player.y - house.y) < 40 && !reachedHouse){
+        objective = "Go inside... something feels wrong.";
+        reachedHouse = true;
+    }
+
+    // RAIN
+    rain.forEach(r=>{
+        r.y += 10;
+        if(r.y > canvas.height){
+            r.y = 0;
+            r.x = Math.random()*canvas.width;
+        }
+    });
 }
 
 function drawFlashlight(){
@@ -91,7 +185,7 @@ function drawFlashlight(){
 
     let g = ctx.createRadialGradient(
         mouse.x, mouse.y, 20,
-        mouse.x, mouse.y, 200
+        mouse.x, mouse.y, 180
     );
 
     g.addColorStop(0, "rgba(255,255,255,0.9)");
@@ -102,8 +196,15 @@ function drawFlashlight(){
 }
 
 function draw(){
+
+    if(!gameStarted) return;
+
     ctx.fillStyle = isNight ? "black" : "#2c5";
     ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // HOUSE
+    ctx.fillStyle = "brown";
+    ctx.fillRect(800,300,60,60);
 
     // PLAYER
     ctx.fillStyle = "cyan";
@@ -115,7 +216,18 @@ function draw(){
         ctx.fillRect(monster.x, monster.y, 20, 20);
     }
 
-    // FLASHLIGHT EFFECT
+    // RAIN
+    if(isNight){
+        ctx.strokeStyle = "rgba(180,180,255,0.3)";
+        rain.forEach(r=>{
+            ctx.beginPath();
+            ctx.moveTo(r.x, r.y);
+            ctx.lineTo(r.x, r.y+10);
+            ctx.stroke();
+        });
+    }
+
+    // FLASHLIGHT
     if(isNight){
         ctx.globalCompositeOperation = "destination-out";
         drawFlashlight();
